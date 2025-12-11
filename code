@@ -1,0 +1,54 @@
+# test models prior for how they tokenize particles. 
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-large')
+model = AutoModelForMaskedLM.from_pretrained("xlm-roberta-large")
+
+# test model to asign particles as a single token
+particles = ['で']
+particle_ids = tokenizer.convert_tokens_to_ids(particles)
+particle = tokenizer.convert_ids_to_tokens(particle_ids)
+
+# print particle as a single token
+particle
+
+from transformers import AutoModelForMaskedLM
+from transformers import AutoTokenizer
+model_id = "FacebookAI/xlm-roberta-large"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForMaskedLM.from_pretrained(model_id)
+model.eval()
+
+# input particles to be used to calculate log probs
+# input sentence data set
+particles = ['で', 'に']
+particle_ids = tokenizer.convert_tokens_to_ids(particles)
+
+sentences = ["図書館[MASK]勉強します。", "公園[MASK]休みます。",
+             "学校[MASK]習います。", "バス[MASK]待ちます。",
+             "図書館[MASK]行きます。", "公園[MASK]散歩します。",
+             "学校[MASK]走ります。", "バス[MASK]出ます。"]
+
+# calculate log probs and organize into a table based on sentence,
+# particle, and index position of the particle
+results = []
+for sentence in sentences:
+  sentence = sentence.replace('[MASK]', tokenizer.mask_token)
+  inputs = tokenizer(sentence, return_tensors="pt")
+  with torch.no_grad():
+    outputs = model(**inputs)
+  masked_indices = (inputs['input_ids'][0] == tokenizer.mask_token_id).nonzero()
+  logprobs = torch.log_softmax(outputs.logits, dim=-1)
+  for masked_index in masked_indices:
+      for particle in particle_ids:
+        results.append({
+        'sentence': sentence,
+        'particle': particle,
+        'masked_index': masked_index[0].item(),
+        'logprobs': logprobs[0, masked_index, particle][0].item()
+        })
+
+results = pd.DataFrame(results)
+results["particle"] = [tokenizer.convert_ids_to_tokens(particle)
+                      for particle in results["particle"]]
+results
