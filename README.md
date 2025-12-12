@@ -7,9 +7,8 @@ For use of this code, install the following packages:
 - pandas
 - torch torchvision
 - transformers accelerate
-- torch 
 
-if using Google Colab:
+If using Google Colab, you can install packages and import torch and pandas like such:
 ```
 !pip3 install nltk pandas
 !pip3 install torch torchvision
